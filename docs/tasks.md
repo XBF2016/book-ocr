@@ -2,17 +2,19 @@
 
 ## 标记说明
 - □ = 待开始
-- ▶ = 当前进行中
 - → = 下一任务
 - √ = 已完成
 
-**提示：** 完成任一任务后，务必更新本清单中的状态标记和「▶ / → 指针」，保持最新进度。
+## 当前进度指针
+- → = 任务 #4【预提交钩子】
+
+**提示：** 完成任一任务后，务必更新本清单中的状态标记和「 → 指针」，保持最新进度。
 
 ## 基础框架
 1. √【项目骨架】生成 `book_ocr/` 目录 & `pyproject.toml`  
-2. ▶【依赖声明】在 `pyproject.toml` 写入运行时依赖  
-3. □【依赖锁定】执行 `poetry lock` & 提交 `poetry.lock`  
-4. □【预提交钩子】配置 pre-commit（ruff、mypy、pytest）
+2. √【依赖声明】在 `pyproject.toml` 写入运行时依赖  
+3. √【依赖锁定】执行 `poetry lock` & 提交 `poetry.lock`  
+4. →【预提交钩子】配置 pre-commit（ruff、mypy、pytest）
 
 ## CI / CD
 5. □【CI-lint】GitHub Actions step：ruff + mypy  
@@ -96,7 +98,3 @@
 61. □【Docker-GPU】编写 `docker/Dockerfile.gpu`  
 62. □【Docker-测试】运行样例命令行通过  
 63. □【README】安装 / 使用 / badge / 目录结构
-
-## 当前进度指针
-- ▶ = 任务 #2【依赖声明】
-- → = 任务 #3【依赖锁定】 

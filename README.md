@@ -11,8 +11,14 @@
 ## 安装
 
 ```bash
+# 通过 pip 安装
 pip install book-ocr
+
+# 通过 poetry 安装（推荐开发者使用）
+poetry install
 ```
+
+poetry install 会自动读取 `poetry.lock` 以复现一致的依赖树。
 
 ## 使用方法
 
