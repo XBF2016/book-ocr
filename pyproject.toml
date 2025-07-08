@@ -39,6 +39,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 120
+target-version = "py311"
+exclude = ["tests/__init__.py"]
 
 [tool.ruff.lint]
 extend-select = ["I"]   # isort
@@ -47,8 +49,9 @@ extend-select = ["I"]   # isort
 quote-style = "double"
 
 [tool.mypy]
-python_version = "3.11"  # 按任务要求设置
+python_version = "3.11"
 strict = true
+show_error_codes = true
 ignore_missing_imports = true
 disallow_untyped_decorators = false
 

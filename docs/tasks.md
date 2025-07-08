@@ -6,7 +6,7 @@
 - √ = 已完成
 
 ## 当前进度指针
-- → = 任务 #5【CI-lint】
+- → = 任务 #6【CI-test】
 
 **提示：** 完成任一任务后，务必更新本清单中的状态标记和「 → 指针」，保持最新进度。
 
@@ -17,8 +17,8 @@
 4. √【预提交钩子】配置 pre-commit（ruff、mypy、pytest）
 
 ## CI / CD
-5. →【CI-lint】GitHub Actions step：ruff + mypy  
-6. □【CI-test】GitHub Actions step：pytest（含缓存）  
+5. √【CI-lint】GitHub Actions step：ruff + mypy  
+6. →【CI-test】GitHub Actions step：pytest（含缓存）  
 7. □【CI-build】GitHub Actions step：PyInstaller 打包产物  
 8. □【CI-release】发布 Release 并上传二进制
 

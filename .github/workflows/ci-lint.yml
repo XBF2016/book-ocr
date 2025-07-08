@@ -1,0 +1,47 @@
+name: CI – Lint
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: ♻️ Cache Poetry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
+
+      - name: ♻️ Cache venv
+        uses: actions/cache@v4
+        with:
+          path: ~/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install poetry
+          poetry config virtualenvs.in-project true
+          poetry install --no-interaction --with dev
+
+      - name: 🕵️ Ruff check
+        run: poetry run ruff check .
+
+      - name: 🕵️ Mypy type check
+        run: poetry run mypy book_ocr tests 
