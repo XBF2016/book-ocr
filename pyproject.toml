@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "book-ocr"
+version = "0.1.0"
+description = "古籍竖排繁简对照生成工具"
+authors = ["YOUR_NAME <you@example.com>"]
+readme = "README.md"
+packages = [{ include = "book_ocr" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.scripts]
+boocr = "book_ocr.cli:app"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
