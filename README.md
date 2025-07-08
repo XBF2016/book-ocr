@@ -20,6 +20,28 @@ poetry install
 
 poetry install 会自动读取 `poetry.lock` 以复现一致的依赖树。
 
+## 开发环境搭建
+
+```bash
+# 克隆仓库
+git clone https://github.com/your-username/book-ocr.git
+cd book-ocr
+
+# 安装依赖
+poetry install
+
+# 激活pre-commit钩子
+poetry run pre-commit install
+
+# 手动运行全部检查（可选）
+poetry run pre-commit run --all-files
+```
+
+项目使用以下代码质量工具：
+- **ruff**: 代码格式化与lint检查
+- **mypy**: 静态类型检查
+- **pytest**: 单元测试
+
 ## 使用方法
 
 ```bash

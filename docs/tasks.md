@@ -6,7 +6,7 @@
 - √ = 已完成
 
 ## 当前进度指针
-- → = 任务 #4【预提交钩子】
+- → = 任务 #5【CI-lint】
 
 **提示：** 完成任一任务后，务必更新本清单中的状态标记和「 → 指针」，保持最新进度。
 
@@ -14,10 +14,10 @@
 1. √【项目骨架】生成 `book_ocr/` 目录 & `pyproject.toml`  
 2. √【依赖声明】在 `pyproject.toml` 写入运行时依赖  
 3. √【依赖锁定】执行 `poetry lock` & 提交 `poetry.lock`  
-4. →【预提交钩子】配置 pre-commit（ruff、mypy、pytest）
+4. √【预提交钩子】配置 pre-commit（ruff、mypy、pytest）
 
 ## CI / CD
-5. □【CI-lint】GitHub Actions step：ruff + mypy  
+5. →【CI-lint】GitHub Actions step：ruff + mypy  
 6. □【CI-test】GitHub Actions step：pytest（含缓存）  
 7. □【CI-build】GitHub Actions step：PyInstaller 打包产物  
 8. □【CI-release】发布 Release 并上传二进制

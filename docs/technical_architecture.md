@@ -28,6 +28,7 @@
 | 测试 | pytest + hypothesis | 单元 & 属性测试 |
 | CI/CD | GitHub Actions | 自动 lint/测试/打包；发布到 Release |
 | 容器化 | Docker + NVIDIA CUDA 镜像 | 保证 GPU 环境一致性（可选） |
+| 代码质量 | ruff + mypy + pre-commit | 自动格式化、静态类型检查、提交前质量把关 |
 
 ---
 
@@ -212,6 +213,40 @@ book_ocr/
 - **单元测试覆盖率** ≥ 80%（核心逻辑）  
 - **集成测试**：CI 触发，随机取 3 页公开古籍样本，校验产物哈希  
 - **性能基准**：pytest-benchmark 保存基线，回归触发告警  
+- **代码质量工具**：
+  - **pre-commit**：Git提交前自动执行代码质量检查
+  - **ruff**：统一的Python linter，自动格式化与代码规范检查
+  - **mypy**：静态类型检查器，减少类型相关错误
+  - **pytest**：单元测试框架，确保功能正确性
+
+### 12.1 开发流程与工具链
+
+开发者遵循以下流程确保代码质量：
+
+1. **本地开发环境搭建**
+   ```bash
+   # 安装依赖
+   poetry install
+   
+   # 激活pre-commit钩子
+   poetry run pre-commit install
+   ```
+
+2. **提交前自动检查**
+   - Git commit触发pre-commit钩子
+   - 运行ruff格式化与规范检查
+   - 执行mypy类型检查
+   - 运行快速单元测试
+   
+3. **持续集成流程**
+   - GitHub Actions自动执行更全面的测试
+   - 分支合并需要通过CI检查
+   - 定期运行性能基准测试
+
+4. **代码审核标准**
+   - 100% 通过 ruff 与 mypy 检查
+   - 无未解决的 TODO 或 FIXME 标记
+   - 关键功能有单元测试覆盖
 
 ---
 
