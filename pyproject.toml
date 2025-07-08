@@ -38,7 +38,11 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-# 预留给预提交钩子任务
+line-length = 120
+extend-select = ["I"]   # isort
+fix = true
 
 [tool.mypy]
-# 预留给预提交钩子任务
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
