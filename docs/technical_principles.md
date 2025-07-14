@@ -1,4 +1,4 @@
-# 古籍竖排繁‧简对照生成工具 - 技术原理
+# 古籍竖排简体文字生成工具 - 技术原理
 
 项目的技术原理可以分为七个关键步骤（对应 PRD 中的 P0–P6），它们按顺序串联形成一条最小可运行链路：
 
@@ -19,20 +19,19 @@
 ## 4. 繁体→简体转换（P4）
 - 借助 opencc-py 调用「t2s.json」配置文件，将 OCR 得到的繁体文本逐字转换为简体，并保证字符数与原文一致，便于后续排版对齐。
 
-## 5. 双列可搜索 PDF 生成（P5）
-- 借助 `reportlab` 或 `fpdf2` 创建一个 PDF 文档。首先，将所有识别出的繁体列图像按从右到左的顺序绘制到页面上。
-- 接着，在每个繁体列图像的左侧对应位置，嵌入不可见的简体文字层。这样既保留了原文的图像版式，又实现了简体文本的全文搜索与复制功能。
-- 生成最终的 `page_dual.pdf`，实现右侧看图、左侧（不可见）存字的效果。
+## 5. 竖排简体可搜索 PDF 生成（P5）
+- 借助 `reportlab` 或 `fpdf2`，根据 OCR 结果的坐标信息，在对应位置直接绘制竖排的简体文字，确保文本可搜索且排版（列数、字数）与原书一致。
+- 生成最终的 `page_simplified.pdf`。
 
 ## 6. CLI 验证命令（P6）
-- 提供 `boocr poc --input <in.pdf> --output <dir>` 命令作为入口：
-  - 依次调用上述六个模块的核心函数（见 pipeline.py）。
-  - 运行结束后在输出目录写出 `page_dual.pdf` 并在终端打印 "DONE"，返回码 0。
+- 提供 `boocr poc --input <in.pdf> --output <page_simplified.pdf>` 命令作为入口：
+  - 依次调用上述 P0–P5 模块的核心函数（见 pipeline.py）。
+  - 运行结束后写出 `page_simplified.pdf` 并在终端打印 "DONE"，返回码 0。
 - 整个流程同步串行，方便调试和定位问题。
 
 ## 数据流与结构
 
 数据在模块之间通过标准 dataclass 传递：
-InputSource → PageImage → ColumnCrop → OcrResult → DualText → RenderedPage。这样既保持类型清晰，也降低模块耦合度。
+InputSource → PageImage → ColumnCrop → OcrResult → RenderedPage。这样既保持类型清晰，也降低模块耦合度。
 
-整体而言，该工具利用成熟的图像处理与 OCR 组件，通过轻量级的 Python CLI 将"竖排古籍扫描件"快速转换为"繁简对照的可搜索 PDF"，满足小规模校勘场景的最低可用需求。
+整体而言，该工具利用成熟的图像处理与 OCR 组件，通过轻量级的 Python CLI 将"竖排古籍扫描件"快速转换为"竖排简体文字的可搜索 PDF"，满足小规模校勘场景的最低可用需求。
