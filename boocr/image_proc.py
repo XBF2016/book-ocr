@@ -49,6 +49,51 @@ def otsu_binarize(image: np.ndarray) -> np.ndarray:
     return binary
 
 
+def detect_skew_angle(image: np.ndarray) -> float:
+    """
+    检测图像的倾斜角度
+
+    Args:
+        image: 输入图像（灰度图或二值图）
+
+    Returns:
+        检测到的倾斜角度（度数）
+    """
+    # 确保输入是灰度图
+    gray = to_grayscale(image)
+
+    # 对图像应用Canny边缘检测
+    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+
+    # 使用霍夫变换检测直线
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180,
+                           threshold=100,
+                           minLineLength=100,
+                           maxLineGap=10)
+
+    angles = []
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            # 避免除零错误
+            if x2 - x1 != 0:
+                angle = np.arctan2(y2 - y1, x2 - x1) * 180 / np.pi
+                # 只考虑接近水平的线（对于竖排文字，水平线通常是更好的参考）
+                if abs(angle) < 45:
+                    angles.append(angle)
+
+    # 如果找不到合适的线，返回0（不旋转）
+    if not angles:
+        return 0.0
+
+    # 使用中位数来避免极端值的影响
+    median_angle = np.median(angles)
+
+    # 对于水平文本，倾斜校正角度应当是检测到角度的负值
+    # 但由于我们处理的是竖排古籍，保持原值（因为旋转方向与排版方向有关）
+    return median_angle
+
+
 def deskew(image: np.ndarray, angle: Optional[float] = None) -> Tuple[np.ndarray, float]:
     """
     图像倾斜校正
@@ -63,11 +108,9 @@ def deskew(image: np.ndarray, angle: Optional[float] = None) -> Tuple[np.ndarray
     # 将图像转为灰度图
     gray = to_grayscale(image)
 
-    detected_angle = 0.0
     if angle is None:
-        # TODO: 实现自动倾斜角度检测
-        # 这里将在T14任务中实现
-        pass
+        # 自动检测倾斜角度
+        detected_angle = detect_skew_angle(gray)
     else:
         detected_angle = angle
 
@@ -90,7 +133,7 @@ def preprocess_image(page_image: PageImage,
 
     Args:
         page_image: 输入的PageImage对象
-        deskew_angle: 可选的指定校正角度
+        deskew_angle: 可选的指定校正角度，如果为None则会进行自动检测
 
     Returns:
         预处理后的PageImage对象
@@ -101,15 +144,12 @@ def preprocess_image(page_image: PageImage,
     # 二值化
     binary_image = otsu_binarize(gray_image)
 
-    # 倾斜校正（如果指定了角度）
-    if deskew_angle is not None:
-        corrected_image, _ = deskew(binary_image, deskew_angle)
-    else:
-        corrected_image = binary_image
+    # 倾斜校正
+    corrected_image, angle = deskew(binary_image, deskew_angle)
 
     # 创建新的PageImage对象
     processed_page = PageImage(
-        page_num=page_image.page_num,
+        page_index=page_image.page_index,
         image=corrected_image,
         width=corrected_image.shape[1],
         height=corrected_image.shape[0]

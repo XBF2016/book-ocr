@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import pytest
 
-from boocr.image_proc import to_grayscale, otsu_binarize, preprocess_image
+from boocr.image_proc import to_grayscale, otsu_binarize, preprocess_image, deskew, detect_skew_angle
 from boocr.dataclasses import PageImage
 
 
@@ -54,6 +54,42 @@ def test_otsu_binarize():
     assert set(np.unique(binary_color)).issubset({0, 255})
 
 
+def test_deskew():
+    """测试倾斜校正功能"""
+    # 创建倾斜的测试图像（包含一条倾斜的线）
+    img = np.zeros((200, 200), dtype=np.uint8)
+
+    # 绘制一条倾斜10度的线
+    angle_deg = 10
+    center = (100, 100)
+    length = 80
+
+    # 计算线条的端点
+    radian = np.deg2rad(angle_deg)
+    x1 = int(center[0] - length * np.cos(radian))
+    y1 = int(center[1] - length * np.sin(radian))
+    x2 = int(center[0] + length * np.cos(radian))
+    y2 = int(center[1] + length * np.sin(radian))
+
+    # 绘制线条
+    cv2.line(img, (x1, y1), (x2, y2), 255, 5)
+
+    # 自动检测倾斜角度
+    detected_angle = detect_skew_angle(img)
+
+    # 角度检测应该接近10度（允许±5度的误差）
+    assert abs(detected_angle - angle_deg) < 5
+
+    # 测试指定角度的倾斜校正
+    corrected_img, angle = deskew(img, angle=angle_deg)
+    assert angle == angle_deg
+
+    # 测试自动检测角度的倾斜校正
+    corrected_img, detected = deskew(img)
+    # 检测到的角度应该接近我们设定的角度
+    assert abs(detected - angle_deg) < 5
+
+
 def test_preprocess_image():
     """测试图像预处理流程"""
     # 创建测试用PageImage
@@ -61,17 +97,23 @@ def test_preprocess_image():
     test_image[30:70, 30:70, :] = 200
 
     page_img = PageImage(
-        page_num=0,
+        page_index=0,
         image=test_image,
         width=100,
         height=100
     )
 
-    # 执行预处理
+    # 执行预处理（不指定角度）
     processed_page = preprocess_image(page_img)
 
     # 验证结果
-    assert processed_page.page_num == page_img.page_num
+    assert processed_page.page_index == page_img.page_index
     assert processed_page.width == page_img.width
     assert processed_page.height == page_img.height
     assert set(np.unique(processed_page.image)).issubset({0, 255})  # 二值化结果
+
+    # 测试指定角度的预处理
+    processed_page2 = preprocess_image(page_img, deskew_angle=5.0)
+    assert processed_page2.page_index == page_img.page_index
+    assert processed_page2.width == page_img.width
+    assert processed_page2.height == page_img.height
