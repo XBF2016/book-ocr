@@ -13,8 +13,9 @@ from boocr.ocr import VerticalChineseOCR, create_ocr_engine
 from boocr.dataclasses import ColumnCrop
 
 
+@pytest.mark.slow
 def test_ocr_engine_initialization():
-    """测试OCR引擎初始化"""
+    """测试OCR引擎初始化（慢测试）"""
     try:
         ocr = create_ocr_engine(use_gpu=False)
         assert ocr.is_initialized() == True
@@ -27,8 +28,9 @@ def test_ocr_engine_initialization():
     "GITHUB_ACTIONS" in os.environ,
     reason="在CI环境中跳过需要下载大型模型的测试"
 )
+@pytest.mark.slow
 def test_ocr_run_with_dummy_image():
-    """测试OCR引擎的运行，使用空白图像"""
+    """测试OCR引擎的运行，使用空白图像（慢测试）"""
     try:
         # 创建一个简单的空白图像
         dummy_image = np.ones((100, 50, 3), dtype=np.uint8) * 255
