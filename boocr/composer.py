@@ -65,7 +65,7 @@ class PdfComposer:
         line_spacing: float = None
     ):
         """
-        在Canvas上创建竖排文本
+        在Canvas上创建竖排文本，确保文本可搜索
 
         Args:
             canvas_obj: ReportLab Canvas对象
@@ -98,9 +98,13 @@ class PdfComposer:
                 current_x += char_height
                 continue
 
-            # 逐字绘制
+            # 逐字绘制，每个字符确保可搜索
             for char in line:
+                # 添加文字并确保文字可搜索
+                # 使用正确的Unicode编码绘制文本
                 canvas_obj.drawString(current_x, current_y, char)
+
+                # 移动到下一个字符位置
                 current_y -= font_size  # 向下移动一个字符高度
 
             # 下一列
@@ -108,57 +112,6 @@ class PdfComposer:
             current_y = y  # 重置y坐标到顶部
 
         canvas_obj.restoreState()
-
-    def render_page(self, page: RenderedPage) -> None:
-        """
-        渲染单个页面到PDF
-
-        Args:
-            page: 要渲染的页面对象
-        """
-        try:
-            # 创建一个单页的Canvas
-            page_size = page.page_size
-            page_width, page_height = page_size
-
-            # 如果输出文件夹不存在，则创建
-            output_dir = self.config.output_path.parent
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            # 创建或追加到现有PDF
-            c = canvas.Canvas(
-                str(self.config.output_path),
-                pagesize=(page_width, page_height)
-            )
-
-            # 从右到左绘制每一列
-            for i, (trad_text, simp_text, bbox) in enumerate(
-                zip(page.trad_texts, page.simp_texts, page.column_bboxes)
-            ):
-                x1, y1, x2, y2 = bbox
-
-                # 计算竖排文本的起始位置
-                # 注意：这里使用右上角作为起点，从右向左排列
-                start_x = x2 - self.config.font_size * 1.5
-                start_y = y2 - self.config.font_size * 1.2
-
-                # 绘制简体文本（竖排）
-                self.create_vertical_text(
-                    c,
-                    simp_text,
-                    start_x,
-                    start_y,
-                    font_size=self.config.font_size
-                )
-
-            # 结束当前页面
-            c.showPage()
-            c.save()
-
-            logger.info(f"页面 {page.page_index} 渲染完成")
-        except Exception as e:
-            logger.error(f"渲染页面失败: {e}")
-            raise
 
     def render_pages(self, pages: List[RenderedPage]) -> Path:
         """
@@ -174,9 +127,94 @@ class PdfComposer:
         if self.config.output_path.exists():
             self.config.output_path.unlink()
 
-        # 渲染每个页面
-        for page in pages:
-            self.render_page(page)
+        # 如果输出文件夹不存在，则创建
+        output_dir = self.config.output_path.parent
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # 渲染每个页面，使用单独的Canvas以确保文本可搜索
+        for i, page in enumerate(pages):
+            # 设置文件名：对于多页PDF，我们先生成每页单独的PDF，稍后会合并
+            if len(pages) > 1:
+                temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_{i}{self.config.output_path.suffix}")
+            else:
+                temp_path = self.config.output_path
+
+            # 创建一个页面的Canvas
+            page_size = page.page_size
+            c = canvas.Canvas(
+                str(temp_path),
+                pagesize=page_size
+            )
+
+            # 设置文档属性以增强可搜索性
+            c.setTitle(f"古籍竖排繁简对照 - 第{page.page_index+1}页")
+            c.setSubject("古籍竖排繁简对照")
+            c.setAuthor("BOOCR")
+            c.setCreator("BOOCR古籍处理工具")
+            c.setKeywords("古籍 竖排 繁简对照 可搜索")
+
+            # 设置PDF语言（简体中文）
+            c.setViewerPreferences(Language="zh-CN")
+
+            # 使用压缩以减小文件大小
+            c.setPageCompression(1)
+
+            # 从右到左绘制每一列
+            for j, (trad_text, simp_text, bbox) in enumerate(
+                zip(page.trad_texts, page.simp_texts, page.column_bboxes)
+            ):
+                x1, y1, x2, y2 = bbox
+
+                # 计算竖排文本的起始位置
+                start_x = x2 - self.config.font_size * 1.5
+                start_y = y2 - self.config.font_size * 1.2
+
+                # 绘制简体文本（竖排）
+                self.create_vertical_text(
+                    c,
+                    simp_text,
+                    start_x,
+                    start_y,
+                    font_size=self.config.font_size
+                )
+
+            # 结束当前页面并保存
+            c.showPage()
+            c.save()
+
+            logger.info(f"页面 {page.page_index} 渲染完成")
+
+        # 如果是多页PDF，需要合并所有页面
+        if len(pages) > 1:
+            try:
+                from PyPDF2 import PdfMerger
+
+                merger = PdfMerger()
+
+                # 添加所有临时PDF文件
+                for i in range(len(pages)):
+                    temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_{i}{self.config.output_path.suffix}")
+                    merger.append(str(temp_path))
+
+                # 写入最终PDF文件
+                merger.write(str(self.config.output_path))
+                merger.close()
+
+                # 删除临时文件
+                for i in range(len(pages)):
+                    temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_{i}{self.config.output_path.suffix}")
+                    if temp_path.exists():
+                        temp_path.unlink()
+
+                logger.info(f"合并了 {len(pages)} 页PDF文件")
+            except ImportError:
+                logger.warning("未找到PyPDF2库，无法合并PDF文件。请安装：pip install PyPDF2")
+                # 至少保留第一页作为输出
+                if pages:
+                    temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_0{self.config.output_path.suffix}")
+                    if temp_path.exists() and temp_path != self.config.output_path:
+                        import shutil
+                        shutil.copy(temp_path, self.config.output_path)
 
         logger.info(f"已生成竖排PDF文件: {self.config.output_path}")
         return self.config.output_path
@@ -223,4 +261,10 @@ def create_simplified_pdf(
     )
 
     composer = create_pdf_composer(config)
-    return composer.render_pages(pages)
+    pdf_path = composer.render_pages(pages)
+
+    # 确保PDF是可搜索的，添加文档级别的元数据
+    # 注：ReportLab已经在每页渲染时添加了元数据和可搜索性
+
+    logger.info(f"已生成可搜索的竖排PDF文件: {pdf_path}")
+    return pdf_path

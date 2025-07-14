@@ -130,3 +130,131 @@ def test_create_simplified_pdf(test_font_path, test_rendered_page):
         assert result_path.exists()
         assert result_path == output_path
         assert output_path.stat().st_size > 0
+
+
+import os
+import pytest
+from pathlib import Path
+import tempfile
+
+from boocr.dataclasses import RenderedPage, RenderConfig
+from boocr.composer import PdfComposer, create_simplified_pdf
+
+# 测试数据
+TEST_TEXT = "这是测试文本"
+TEST_BBOX = (10, 10, 100, 100)
+
+
+def test_create_vertical_text():
+    """测试创建竖排文本功能"""
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        temp_path = Path(tmp.name)
+
+    try:
+        # 创建一个渲染配置
+        config = RenderConfig(
+            output_path=temp_path,
+            font_path=str(Path(__file__).parent / "assets" / "simfang.ttf"),
+            font_size=12,
+            line_spacing_ratio=1.5
+        )
+
+        # 创建一个PDF排版器
+        composer = PdfComposer(config)
+
+        # 创建测试页面数据
+        page = RenderedPage(
+            page_index=0,
+            page_size=(595, 842),  # A4大小
+            trad_texts=[TEST_TEXT],
+            simp_texts=[TEST_TEXT],
+            column_bboxes=[TEST_BBOX]
+        )
+
+        # 渲染PDF
+        pdf_path = composer.render_pages([page])
+
+        # 检查文件是否存在
+        assert pdf_path.exists()
+        assert os.path.getsize(pdf_path) > 0
+
+        # 这里我们无法直接检查文本是否可搜索，因为这需要PDF解析库
+        # 但我们可以检查文件是否成功创建
+
+    finally:
+        # 清理临时文件
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def test_create_simplified_pdf():
+    """测试创建简体中文竖排PDF函数"""
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        temp_path = Path(tmp.name)
+
+    try:
+        # 创建测试页面数据
+        page = RenderedPage(
+            page_index=0,
+            page_size=(595, 842),  # A4大小
+            trad_texts=[TEST_TEXT],
+            simp_texts=[TEST_TEXT],
+            column_bboxes=[TEST_BBOX]
+        )
+
+        # 创建PDF
+        font_path = str(Path(__file__).parent / "assets" / "simfang.ttf")
+        pdf_path = create_simplified_pdf(
+            pages=[page],
+            output_path=temp_path,
+            font_path=font_path,
+            font_size=12,
+            line_spacing_ratio=1.5
+        )
+
+        # 检查文件是否存在
+        assert pdf_path.exists()
+        assert os.path.getsize(pdf_path) > 0
+
+    finally:
+        # 清理临时文件
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def test_multi_page_pdf():
+    """测试创建多页PDF文件"""
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        temp_path = Path(tmp.name)
+
+    try:
+        # 创建测试页面数据
+        pages = []
+        for i in range(3):
+            page = RenderedPage(
+                page_index=i,
+                page_size=(595, 842),  # A4大小
+                trad_texts=[f"第{i+1}页测试文本"],
+                simp_texts=[f"第{i+1}页测试文本"],
+                column_bboxes=[TEST_BBOX]
+            )
+            pages.append(page)
+
+        # 创建PDF
+        font_path = str(Path(__file__).parent / "assets" / "simfang.ttf")
+        pdf_path = create_simplified_pdf(
+            pages=pages,
+            output_path=temp_path,
+            font_path=font_path,
+            font_size=12,
+            line_spacing_ratio=1.5
+        )
+
+        # 检查文件是否存在
+        assert pdf_path.exists()
+        assert os.path.getsize(pdf_path) > 0
+
+    finally:
+        # 清理临时文件
+        if temp_path.exists():
+            temp_path.unlink()

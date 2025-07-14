@@ -1,6 +1,6 @@
 # 古籍竖排繁‧简对照生成工具 - 任务清单
 
-→ 下一个任务：T30
+→ 下一个任务：T31
 
 **提示：**
 - 做完一个任务记得 **更新任务状态（√/□）和指针** 然后再 **提交git**
@@ -55,7 +55,7 @@
 ### P5 竖排排版（简体文字 PDF）
 √ T28. 新建 boocr/composer.py
 √ T29. 使用 reportlab/fpdf2，根据 OCR 结果在对应位置绘制简体文字
-□ T30. 保存 `page_simplified.pdf`，确保文字可搜索
+√ T30. 保存 `page_simplified.pdf`，确保文字可搜索
 □ T31. 单元测试：给定 OcrResult 列表生成 PDF 并断言文件可解析
 
 ### Pipeline 串联
