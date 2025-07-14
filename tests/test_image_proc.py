@@ -12,6 +12,24 @@ from boocr.image_proc import to_grayscale, otsu_binarize, preprocess_image, desk
 from boocr.dataclasses import PageImage
 
 
+def create_test_image(path, h, w, angle_deg=0):
+    """辅助函数：创建并保存一张用于测试的倾斜图像"""
+    img = np.zeros((h, w), dtype=np.uint8)
+    center = (w // 2, h // 2)
+
+    # 绘制一条倾斜的线
+    length = min(h, w) // 2
+    radian = np.deg2rad(angle_deg)
+    x1 = int(center[0] - length * np.cos(radian))
+    y1 = int(center[1] - length * np.sin(radian))
+    x2 = int(center[0] + length * np.cos(radian))
+    y2 = int(center[1] + length * np.sin(radian))
+    cv2.line(img, (x1, y1), (x2, y2), 255, 5)
+
+    cv2.imwrite(str(path), img)
+    return img
+
+
 def test_to_grayscale():
     """测试灰度化函数"""
     # 创建彩色测试图像（RGB）
@@ -83,11 +101,15 @@ def test_deskew():
     # 测试指定角度的倾斜校正
     corrected_img, angle = deskew(img, angle=angle_deg)
     assert angle == angle_deg
+    # 校正后图像尺寸不变
+    assert corrected_img.shape == img.shape
 
     # 测试自动检测角度的倾斜校正
     corrected_img, detected = deskew(img)
     # 检测到的角度应该接近我们设定的角度
     assert abs(detected - angle_deg) < 5
+    # 校正后图像尺寸不变
+    assert corrected_img.shape == img.shape
 
 
 def test_preprocess_image():
@@ -117,3 +139,29 @@ def test_preprocess_image():
     assert processed_page2.page_index == page_img.page_index
     assert processed_page2.width == page_img.width
     assert processed_page2.height == page_img.height
+
+
+def test_preprocess_image_from_file(tmp_path):
+    """
+    测试从文件读取图像->预处理->断言返回shape
+    这对应于T15的要求
+    """
+    # 1. 准备测试图片
+    h, w = 300, 400
+    test_image_path = tmp_path / "test_image.png"
+    create_test_image(test_image_path, h, w, angle_deg=0)
+
+    # 2. 从文件读取示例图
+    loaded_image = cv2.imread(str(test_image_path), cv2.IMREAD_COLOR)
+    assert loaded_image is not None
+    assert loaded_image.shape == (h, w, 3)
+
+    # 3. 封装为 PageImage 并执行预处理
+    page_img = PageImage(page_index=0, image=loaded_image, width=w, height=h)
+    processed_page = preprocess_image(page_img, deskew_angle=0)
+
+    # 4. 断言返回 ndarray shape
+    # 预处理后，图像尺寸应保持不变
+    assert processed_page.image.shape == (h, w)
+    assert processed_page.width == w
+    assert processed_page.height == h
