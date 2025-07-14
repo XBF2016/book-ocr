@@ -1,6 +1,6 @@
 # 古籍竖排繁‧简对照生成工具 - 任务清单
 
-→ 下一个任务：T34
+→ 下一个任务：T35
 
 **提示：**
 - 做完一个任务记得 **更新任务状态（√/□）和指针** 然后再 **提交git**
@@ -63,7 +63,7 @@
 √ T33. 更新 boocr/cli.py 调用 pipeline 并打印 "DONE" + 0 返回码
 
 ### 集成与示例
-□ T34. 准备 3 页示例 PDF 到 tests/assets/
+√ T34. 准备 3 页示例 PDF 到 tests/assets/
 □ T35. 编写 scripts/e2e.ps1：一键跑 `boocr poc --input <...>.pdf --output <...>.pdf` 并断言输出文件存在
 □ T36. 在 docs/ 更新快速上手指南（CLI 示例）
 
