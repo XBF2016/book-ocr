@@ -24,3 +24,6 @@ Thumbs.db
 
 # Cursor AI local metadata
 # .cursor/
+
+logs/
+output/
