@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 from boocr.pdf_utils import extract_pages_from_pdf, pdf_to_ndarray
+from boocr.dataclasses import PageImage
 
 
 def create_test_pdf():
@@ -63,6 +64,69 @@ def test_extract_pages_from_pdf():
             assert page_image.image.ndim == 3  # (H, W, 3) 格式
             assert page_image.width > 0
             assert page_image.height > 0
+
+    finally:
+        # 清理临时文件
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+
+
+def test_extract_pages_from_pdf_with_path_object():
+    """测试使用Path对象作为输入时PDF文件提取页面功能。"""
+    # 创建测试PDF
+    pdf_path = create_test_pdf()
+
+    try:
+        # 将路径转换为Path对象
+        pdf_path_obj = Path(pdf_path)
+
+        # 提取页面
+        page_images = extract_pages_from_pdf(pdf_path_obj)
+
+        # 验证结果
+        assert len(page_images) == 2  # 应该有两页
+
+        # 验证返回的是PageImage对象列表
+        assert all(isinstance(page, PageImage) for page in page_images)
+
+    finally:
+        # 清理临时文件
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+
+
+def test_page_image_attributes():
+    """测试PageImage对象的属性和完整性。"""
+    # 创建测试PDF
+    pdf_path = create_test_pdf()
+
+    try:
+        # 提取页面
+        page_images = extract_pages_from_pdf(pdf_path)
+
+        # 详细验证PageImage对象
+        for i, page_image in enumerate(page_images):
+            # 验证是PageImage类的实例
+            assert isinstance(page_image, PageImage)
+
+            # 验证页码索引正确
+            assert page_image.page_index == i
+
+            # 验证图像数据
+            assert isinstance(page_image.image, np.ndarray)
+            assert page_image.image.ndim == 3  # 3维数组(高,宽,通道)
+            assert page_image.image.shape[2] == 3  # RGB三通道
+
+            # 验证宽高是有效的正数值（但不必等于图像尺寸）
+            # 在pdf_utils.py中，width和height是原始PDF页面的尺寸，经过缩放后不等于图像数组的实际尺寸
+            assert page_image.width > 0
+            assert page_image.height > 0
+
+            # 验证图像数据有效（非全零）
+            assert np.sum(page_image.image) > 0
+
+            # 验证图像数据类型正确
+            assert page_image.image.dtype == np.uint8
 
     finally:
         # 清理临时文件
