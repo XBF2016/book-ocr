@@ -16,6 +16,7 @@ from paddleocr import PaddleOCR
 
 # Import project specific modules
 from boocr.dataclasses import ColumnCrop, OcrResult
+from boocr.ocr_model import ensure_models_ready, ModelManager
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -31,7 +32,8 @@ class VerticalChineseOCR:
         gpu_mem: int = 500,
         enable_mkldnn: bool = True,
         cpu_threads: int = 4,
-        lang_type: str = "chinese_cht"  # 繁体中文模型
+        lang_type: str = "chinese_cht",  # 繁体中文模型
+        auto_download: bool = True,      # 自动下载模型
     ):
         """
         初始化OCR引擎
@@ -42,8 +44,13 @@ class VerticalChineseOCR:
             enable_mkldnn: 是否启用mkldnn加速
             cpu_threads: CPU线程数
             lang_type: 语言类型，默认为繁体中文(chinese_cht)
+            auto_download: 是否自动下载模型（如果不存在）
         """
         logger.info(f"初始化竖排繁体OCR引擎，使用语言模型: {lang_type}")
+
+        # 如果自动下载模型开关打开，确保模型已下载
+        if auto_download:
+            self._ensure_models()
 
         try:
             self.ocr = PaddleOCR(
@@ -77,6 +84,21 @@ class VerticalChineseOCR:
             logger.error(f"OCR引擎初始化失败: {e}")
             self.initialized = False
             raise RuntimeError(f"OCR引擎初始化失败: {e}")
+
+    def _ensure_models(self):
+        """确保所需的模型已经下载并准备就绪"""
+        logger.info("检查 PaddleOCR 模型...")
+
+        try:
+            # 使用我们的自定义下载器确保模型已准备就绪
+            models_ready = ensure_models_ready()
+            if not models_ready:
+                logger.warning("一个或多个模型下载失败，PaddleOCR 可能会尝试自动下载")
+            else:
+                logger.info("所有模型已准备就绪")
+        except Exception as e:
+            logger.error(f"模型检查失败: {e}")
+            logger.warning("将使用 PaddleOCR 内置下载流程")
 
     def is_initialized(self) -> bool:
         """检查OCR引擎是否已初始化"""
@@ -168,17 +190,19 @@ class VerticalChineseOCR:
 
 
 # 工厂方法：创建OCR引擎实例
-def create_ocr_engine(use_gpu: bool = False) -> VerticalChineseOCR:
+def create_ocr_engine(use_gpu: bool = False, auto_download: bool = True) -> VerticalChineseOCR:
     """
     创建竖排繁体中文OCR引擎实例
 
     Args:
         use_gpu: 是否使用GPU加速
+        auto_download: 是否自动下载模型（如果不存在）
 
     Returns:
         VerticalChineseOCR: OCR引擎实例
     """
     return VerticalChineseOCR(
         use_gpu=use_gpu,
-        lang_type="chinese_cht"  # 使用繁体中文模型
+        lang_type="chinese_cht",  # 使用繁体中文模型
+        auto_download=auto_download,
     )
