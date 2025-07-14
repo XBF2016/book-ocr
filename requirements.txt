@@ -11,7 +11,7 @@ Pillow>=10.0.0
 opencv-python>=4.8.0
 
 # 繁简转换
-opencc-py>=1.1.1
+opencc-python-reimplemented>=0.1.7
 
 # OCR引擎
 paddlepaddle
