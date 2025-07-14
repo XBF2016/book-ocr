@@ -23,4 +23,4 @@ venv-py311/
 Thumbs.db
 
 # Cursor AI local metadata
-.cursor/
+# .cursor/
