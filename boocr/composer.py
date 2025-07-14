@@ -153,8 +153,8 @@ class PdfComposer:
             c.setCreator("BOOCR古籍处理工具")
             c.setKeywords("古籍 竖排 繁简对照 可搜索")
 
-            # 设置PDF语言（简体中文）
-            c.setViewerPreferences(Language="zh-CN")
+            # TODO: 研究如何正确设置PDF文档的 /Lang 属性
+            # c.setViewerPreference('Language', 'zh-CN')
 
             # 使用压缩以减小文件大小
             c.setPageCompression(1)
