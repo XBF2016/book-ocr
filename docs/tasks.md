@@ -1,6 +1,6 @@
 # 古籍竖排繁‧简对照生成工具 - 任务清单
 
-→ 下一个任务：T32
+→ 下一个任务：T34
 
 **提示：**
 - 做完一个任务记得 **更新任务状态（√/□）和指针** 然后再 **提交git**
@@ -59,8 +59,8 @@
 √ T31. 单元测试：给定 OcrResult 列表生成 PDF 并断言文件可解析
 
 ### Pipeline 串联
-□ T32. 在 boocr/pipeline.py 实现 run_pipeline(input_path, output_path) 调度 P0–P5
-□ T33. 更新 boocr/cli.py 调用 pipeline 并打印 "DONE" + 0 返回码
+√ T32. 在 boocr/pipeline.py 实现 run_pipeline(input_path, output_path) 调度 P0–P5
+√ T33. 更新 boocr/cli.py 调用 pipeline 并打印 "DONE" + 0 返回码
 
 ### 集成与示例
 □ T34. 准备 3 页示例 PDF 到 tests/assets/
