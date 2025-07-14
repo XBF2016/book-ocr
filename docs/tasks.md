@@ -1,6 +1,6 @@
 # 古籍竖排繁‧简对照生成工具 - 任务清单
 
-→ 下一个任务：T06
+→ 下一个任务：T07
 提示：做完一个任务记得 **更新任务状态（√/□）和指针**
 
 ## 任务清单
@@ -14,7 +14,7 @@
 √ T03. 在 tests/ 添加 pytest 初始化与示例占位文件
 √ T04. 新建 boocr/ 包及空 __init__.py
 √ T05. 创建 boocr/cli.py：click 入口 `boocr poc --input <in.pdf> --output <out.pdf>` 雏形（打印 "TODO"）
-□ T06. 创建 boocr/pipeline.py：定义同步串行调用接口（空实现）
+√ T06. 创建 boocr/pipeline.py：定义同步串行调用接口（空实现）
 □ T07. 在 boocr/dataclasses.py 定义 InputSource / PageImage / ColumnCrop / OcrResult / RenderedPage / RenderConfig
 □ T08. 更新 README：项目简介、运行步骤（占位）
 
