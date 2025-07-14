@@ -1,6 +1,11 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
-def run_pipeline(input_path: str, output_path: str, params: Dict[str, Any] = None):
+def run_pipeline(
+    input_path: str,
+    output_path: str,
+    columns: Optional[int] = None,
+    params: Optional[Dict[str, Any]] = None,
+):
     """
     The main processing pipeline for OCR.
 
@@ -15,12 +20,15 @@ def run_pipeline(input_path: str, output_path: str, params: Dict[str, Any] = Non
     Args:
         input_path (str): Path to the input PDF file.
         output_path (str): Path to save the output file.
+        columns (Optional[int], optional): Number of columns to override auto-detection. Defaults to None.
         params (Dict[str, Any], optional): Additional parameters to control the pipeline. Defaults to None.
     """
     # This is an empty implementation as per T06
     print("Pipeline started (dummy implementation).")
     print(f"Input: {input_path}")
     print(f"Output: {output_path}")
+    if columns:
+        print(f"Columns override: {columns}")
     if params:
         print(f"Params: {params}")
 

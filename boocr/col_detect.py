@@ -1,24 +1,43 @@
 """
 列检测与裁切
 """
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 
 
-def detect_columns(bin_image: np.ndarray) -> List[Tuple[int, int, int, int]]:
+def detect_columns(bin_image: np.ndarray, num_columns: Optional[int] = None) -> List[Tuple[int, int, int, int]]:
     """
     从二值化后的页面图像中检测文本列的边界。
 
     Args:
         bin_image: 二值化后的图像，其中文本为黑色 (0)，背景为白色 (255)。
                    形状为 (H, W)。
+        num_columns (Optional[int], optional): 手动指定列数。如果提供，则覆盖自动检测。Defaults to None.
 
     Returns:
         一个列表，每个元素是一个元组，代表一列的边界框 (x1, y1, x2, y2)。
         目前 y1, y2 直接使用页面高度。
     """
     height, width = bin_image.shape
+
+    # T18.3: Handle manual column override
+    if num_columns is not None:
+        if num_columns <= 0:
+            return []
+
+        col_width = width // num_columns
+        bboxes = []
+        for i in range(num_columns):
+            x1 = i * col_width
+            x2 = (i + 1) * col_width
+            # 确保最后一列延伸到图像边缘
+            if i == num_columns - 1:
+                x2 = width
+            bboxes.append((x1, 0, x2, height))
+        return bboxes
+
+    # Automatic detection based on vertical projection
     # T17.2: 实现垂直投影
     # invert image, so text is 1 and background is 0
     inv_image = 255 - bin_image
