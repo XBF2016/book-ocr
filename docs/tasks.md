@@ -1,6 +1,6 @@
 # 古籍竖排繁‧简对照生成工具 - 任务清单
 
-→ 下一个任务：T03
+→ 下一个任务：T04
 提示：做完一个任务记得 **更新任务状态（√/□）和指针**
 
 ## 任务清单
@@ -11,7 +11,7 @@
 √ T02. 创建 virtualenv 并写入 requirements.txt（Python 3.11 / click / typer / numpy / Pillow / OpenCV / opencc-py / paddleocr / pdfplumber / reportlab 等）
 
 ### 目录与骨架
-□ T03. 在 tests/ 添加 pytest 初始化与示例占位文件
+√ T03. 在 tests/ 添加 pytest 初始化与示例占位文件
 □ T04. 新建 boocr/ 包及空 __init__.py
 □ T05. 创建 boocr/cli.py：click 入口 `boocr poc --input <in.pdf> --output <out.pdf>` 雏形（打印 "TODO"）
 □ T06. 创建 boocr/pipeline.py：定义同步串行调用接口（空实现）
