@@ -1,14 +1,14 @@
 # 古籍竖排繁‧简对照生成工具 - 任务清单
 
-→ 下一个任务：T01
+→ 下一个任务：T03
 提示：做完一个任务记得 **更新任务状态（√/□）和指针**
 
 ## 任务清单
 （√＝已完成，□＝未完成）
 
 ### 基础准备
-□ T01. 初始化本地 git 仓库：clone、创建 poc 分支，提交初始 README
-□ T02. 创建 virtualenv 并写入 requirements.txt（Python 3.11 / click / typer / numpy / Pillow / OpenCV / opencc-py / paddleocr / pdfplumber / reportlab 等）
+√ T01. 初始化本地 git 仓库：clone、创建 poc 分支，提交初始 README
+√ T02. 创建 virtualenv 并写入 requirements.txt（Python 3.11 / click / typer / numpy / Pillow / OpenCV / opencc-py / paddleocr / pdfplumber / reportlab 等）
 
 ### 目录与骨架
 □ T03. 在 tests/ 添加 pytest 初始化与示例占位文件

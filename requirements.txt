@@ -1,0 +1,25 @@
+# 古籍竖排繁‧简对照生成工具依赖
+# 推荐Python 3.11环境
+
+# CLI工具
+click>=8.1.0
+typer>=0.9.0
+
+# 图像处理
+numpy>=1.24.0
+Pillow>=10.0.0
+opencv-python>=4.8.0
+
+# 繁简转换
+opencc-py>=1.1.1
+
+# OCR引擎
+paddlepaddle
+paddleocr>=2.6.0
+
+# PDF处理
+pdfplumber>=0.10.0
+reportlab>=4.0.0
+
+# 测试工具
+pytest>=7.0.0
