@@ -1,10 +1,10 @@
 # 【技术设计文档】—「古籍竖排繁‧简对照生成工具（POC）」
-**版本：v0.2 日期：YYYY-MM-DD**
+**版本：v0.3 日期：YYYY-MM-DD**
 
 ---
 ## 1. 总览
 ---
-目标：在 7 天内完成单页竖排古籍扫描件（PDF/图像） → 双列（右繁图像左简文字）可搜索 PDF 的最小可运行链路。
+目标：在 7 天内完成单页竖排古籍扫描件（PDF/图像） → 「竖排简体列（可搜索文字，列数、字数与原书一致）」PDF 的最小可运行链路。
 范围严格对标 PRD v0.2 (P0–P6)，排除批处理、GUI 等非必要功能。
 
 ---
@@ -19,7 +19,7 @@ CLI（入口层）
 │  ├─ Column Detector    (P2)
 │  ├─ Vertical OCR       (P3)
 │  ├─ Trad→Simp Convert (P4)
-│  └─ Dual-Column Render (P5)
+│  └─ Vertical Text Render (P5)
 │
 └─ IO 层
    ├─ Input Loader  (PDF/图像读取与校验)
@@ -49,8 +49,7 @@ CLI（入口层）
 - `PageImage`: `ndarray`     # 输入全图
 - `ColumnCrop`: `ndarray` + `bbox`  # 单列裁切结果
 - `OcrResult`: `str`              # 单列繁体文本
-- `DualText`: `{trad: str, simp: str}`
-- `RenderedPage`: `bytes`         # 内存中的 PDF 页面对象
+- `RenderedPage`: `bytes`         # 内存中仅含简体文字的 PDF 页面对象
 - `RenderConfig`: `{font_path: str, font_size: int, page_size: (w,h), gap_px: 20, …}`
 
 ### 3.3 核心算法
@@ -59,8 +58,8 @@ CLI（入口层）
 - **P2** 垂直投影求列分割线；支持 2–6 列，误差控制≤±2 字宽。
 - **P3** OCR：竖排模式，优先加载 PaddleOCR 的中日繁模型。
 - **P4** OpenCC「t2s.json」配置，字符级转换，保持长度一致。
-- **P5** 使用 `reportlab`/`fpdf2`，先绘制所有繁体列图像，再在其左侧对应位置嵌入不可见的简体文字层，实现可搜索。
-- **P6** CLI：`boocr poc --input <in.pdf> --output <page_dual.pdf>`，异常捕获统一返回码 0。
+- **P5** 使用 `reportlab`/`fpdf2`，根据 OCR 结果的坐标信息，在对应位置直接绘制竖排的简体文字，确保文本可搜索且排版（列数、字数）与原书一致。
+- **P6** CLI：`boocr poc --input <in.pdf> --output <page_simplified.pdf>`，运行完毕终端打印 "DONE"，异常捕获统一返回码 0。
 
 ---
 ## 4. 目录结构（建议）
@@ -75,7 +74,7 @@ book-ocr/
 │  ├─ col_detect.py  # P2
 │  ├─ ocr.py         # P3
 │  ├─ converter.py   # P4
-│  └─ composer.py    # P5 (PDF合成)
+│  └─ composer.py    # P5 (生成竖排简体文字 PDF)
 ├─ docs/             # PRD & 技术文档
 └─ tests/            # 简单单元 / 样例图脚本
 ```
@@ -86,7 +85,7 @@ book-ocr/
 - **D1**：仓库初始化、CLI 雏形、数据结构定义
 - **D2**：`pdf_utils.py` (P0) + `image_proc.py` (P1) + `col_detect.py` (P2)，完成 PDF 拆页、预处理与列检测及可视化
 - **D3**：`ocr.py` (P3) + `converter.py` (P4)，完成 OCR、繁简转换并贯通坐标映射
-- **D4**：`composer.py` (P5) 完成双列 PDF 生成；撰写 README 与交付文档
+- **D4**：`composer.py` (P5) 完成竖排简体文字 PDF 生成；撰写 README 与交付文档
 （每日 push + tag，保留回滚点）
 
 ---
