@@ -64,10 +64,13 @@
 
 ### 集成与示例
 √ T34. 准备 3 页示例 PDF 到 tests/assets/
-□ T35. 编写 scripts/e2e.ps1：一键跑 `boocr poc --input <...>.pdf --output <...>.pdf` 并断言输出文件存在
-□ T36. 在 docs/ 更新快速上手指南（CLI 示例）
+□ T35. 编写集中测试脚本 (scripts/run_e2e_tests.py)，整合以下步骤：
+    - 步骤 1：运行所有 pytest 单元测试 (`pytest`)
+    - 步骤 2：执行 CLI 端到端流程（使用多页样本）
+    - 步骤 3：生成测试覆盖率报告
 
 ### 质量与文档（核心）
+□ T36. 在 docs/ 更新快速上手指南（CLI 示例）
 □ T37. 完善技术设计文档章节 4–8 细节（依赖版本、数据流图）
 □ T38. 初稿 PRD & 技术文档同步审阅自检
 
@@ -78,3 +81,4 @@
 □ T42. 每日 push 并打 tag（D1…D4）；在 GitHub Releases 草稿附安装步骤
 □ T43. 完成 D4 里程碑后整理 changelog
 □ T44. 预研批处理与 GUI 需求，记录在 docs/todo_future.md
+□ T45. 编写 e2e.ps1 脚本作为 Windows 环境下的快捷测试方式
