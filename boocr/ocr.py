@@ -206,3 +206,49 @@ def create_ocr_engine(use_gpu: bool = False, auto_download: bool = True) -> Vert
         lang_type="chinese_cht",  # 使用繁体中文模型
         auto_download=auto_download,
     )
+
+
+# T23: 封装函数，直接传入图像数组并获取识别的文本
+def run_ocr(crop: np.ndarray) -> str:
+    """
+    对图像进行OCR识别，提取文本内容
+
+    Args:
+        crop: 图像数组(numpy.ndarray)，支持灰度或RGB格式
+
+    Returns:
+        str: 识别出的文本内容，如果识别失败则返回空字符串
+    """
+    try:
+        # 创建OCR引擎
+        ocr_engine = create_ocr_engine(use_gpu=False, auto_download=True)
+
+        # 检查OCR引擎是否初始化成功
+        if not ocr_engine.is_initialized():
+            logger.error("OCR引擎初始化失败")
+            return ""
+
+        # 执行OCR识别
+        result = ocr_engine.ocr.ocr(crop, cls=True)
+
+        # 处理OCR结果
+        if not result or len(result) == 0 or not result[0]:
+            logger.warning("OCR未识别到文本")
+            return ""
+
+        # 提取文本并按从下到上的顺序合并（考虑竖排文字的阅读顺序）
+        texts = []
+
+        # PaddleOCR的结果格式: [[[文本框坐标], [文本, 置信度]], [...]]
+        for line in result[0]:
+            if len(line) >= 2 and isinstance(line[1], (list, tuple)) and len(line[1]) >= 2:
+                text = line[1][0]  # 提取文本
+                texts.append(text)
+
+        # 垂直文本，按从下到上的顺序合并
+        full_text = "\n".join(reversed(texts))
+        return full_text
+
+    except Exception as e:
+        logger.error(f"OCR识别失败: {e}")
+        return ""
