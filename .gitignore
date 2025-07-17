@@ -27,3 +27,5 @@ Thumbs.db
 
 logs/
 output/
+
+boocr/ocr_model/*

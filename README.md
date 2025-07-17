@@ -39,7 +39,19 @@ pip install -r requirements.txt
 ### 3. 运行
 
 ```bash
-# 运行示例 (输入输出路径为占位符)
+# 仅验证拆页 (P0)
+boocr extract --input ./path/to/your/input.pdf        # 输出在 output/<PDF名>/P0/
+
+# 仅执行预处理 (P1)
+boocr preproc [--input <pdf|output/<PDF>/P0>]    # 无参数时自动检测唯一 P0 目录
+                                                    # 自动检测并复用 P0 PNG（若存在），否则重光栅化；输出在 output/<PDF名>/P1/
+
+# 仅执行列检测 (P2)
+boocr col [--input <pdf|output/<PDF>/P1>] [--columns <n>]  # 无参数时自动检测唯一 P1 目录
+                                                          # 生成列分割 JSON + 预览 PNG（可选保存列裁切 PNG），输出在 output/<PDF名>/P2/
+                                                          # 通过 --save_crops 开关可将每列裁剪结果保存为 page_x_col_y.png
+
+# 跑完整流水线 (P0–P5)
 boocr poc --input ./path/to/your/input.pdf --output ./path/to/your/output.pdf
 ```
 

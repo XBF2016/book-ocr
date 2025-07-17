@@ -25,7 +25,7 @@
 
 ### P0 PDF 拆页与基本信息读取
 √ T09. 新建 boocr/pdf_utils.py
-√ T10. 实现 PDF 拆页与光栅化为 ndarray
+√ T10. 实现 PDF 拆页与光栅化为 ndarray，并按 `output/<pdf名>/P0/` 保存光栅化结果（PNG）
 √ T11. 编写单元测试（读取示例 PDF，断言返回 PageImage 对象）
 
 ### P1 图像预处理
@@ -34,15 +34,15 @@
 √ T14. 实现可选手动倾斜校正（角度参数）
 √ T15. 写对应单元测试（读取示例图，断言返回 ndarray shape）
 
-### P2 列检测与裁切
-√ T16. 新建 boocr/col_detect.py
-√ T17. 实现垂直投影求列分割线（自动列数）
-√ T18. 支持 CLI 覆盖列数参数（传入 pipeline）
-√ T19. 输出 ColumnCrop 列表 + bbox；单元测试断言列数范围
+### P2 列检测与裁切（PP-OCRV5 det）
+□ T16. 新建 boocr/col_detect.py（集成 PaddleOCR PP-OCRV5 det 模型）
+□ T17. 解析 det 结果合并列框，生成 ColumnCrop 列表
+□ T18. CLI 支持阈值/列数参数（传入 pipeline）
+□ T19. 单元测试：示例图断言列数与 bbox 合理
 
-### P3 竖排 OCR（繁体）
+### P3 竖排 OCR（繁体，det+cls+rec 全流水线）
 √ T20. 新建 boocr/ocr.py
-√ T21. 集成 PaddleOCR vertical 模式，加载繁体模型
+√ T21. 集成 PaddleOCR det + cls + rec predict() 模式，加载繁体模型
 √ T22. 编写 PaddleOCR 模型下载脚本 / 缓存检测，首次运行自动处理
 √ T23. 编写封装函数 `run_ocr(crop: ndarray) -> str`
 √ T24. 在 tests/ 加入 1 个小图块 OCR 快速测试（跳过慢测）
@@ -60,14 +60,17 @@
 
 ### Pipeline 串联
 √ T32. 在 boocr/pipeline.py 实现 run_pipeline(input_path, output_path) 调度 P0–P5
-√ T33. 更新 boocr/cli.py 调用 pipeline 并打印 "DONE" + 0 返回码
+√ T33. 更新 boocr/cli.py：① 调用 pipeline 并打印 "DONE" + 0 返回码；② 注册 `extract` 子命令（P0）；③ 注册 `preproc` 子命令（P1），输出到 output/<PDF名>/P1/
 
 ### 集成与示例
 √ T34. 准备 3 页示例 PDF 到 tests/assets/
-□ T35. 编写集中测试脚本 (scripts/run_e2e_tests.py)，整合以下步骤：
-    - 步骤 1：运行所有 pytest 单元测试 (`pytest`)
-    - 步骤 2：执行 CLI 端到端流程（使用多页样本）
-    - 步骤 3：生成测试覆盖率报告
+√ T35. 编写集中测试脚本 (scripts/run_e2e_tests.py)，整合以下步骤：
+    √ 步骤 1：运行所有 pytest 单元测试 (`pytest`)
+    √ 步骤 2：执行 CLI 端到端流程（使用多页样本）
+    √ 步骤 3：生成测试覆盖率报告
+    □ 步骤 4：解析生成 PDF，断言每页可提取文本且长度 > 0（验证可搜索性）
+    □ 步骤 5：读取生成的PDF，看下是否有可搜索文字，并且文字内容跟输入内容是一样的
+    □ 步骤 6：基于 tests/assets/expected_simplified.txt 计算相似度 ≥ 90%（验证 OCR & 转换准确性）
 
 ### 质量与文档（核心）
 □ T36. 在 docs/ 更新快速上手指南（CLI 示例）

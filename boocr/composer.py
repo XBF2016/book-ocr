@@ -42,17 +42,42 @@ class PdfComposer:
 
     def _initialize_fonts(self):
         """初始化字体"""
+        # 尝试按顺序注册字体，确保PDF中包含可搜索的中文字符
+        font_candidates = []
+
+        # 1) 用户配置的字体
+        if self.config.font_path:
+            font_candidates.append(("ChineseFont", self.config.font_path))
+
+        # 2) 常见系统字体（Windows SimSun）
+        win_simsun = Path(r"C:\Windows\Fonts\simsun.ttc")
+        if win_simsun.exists():
+            font_candidates.append(("SimSun", str(win_simsun)))
+
+        # 依次尝试 TrueType 字体
+        for fname, fpath in font_candidates:
+            try:
+                pdfmetrics.registerFont(TTFont(fname, fpath))
+                self.font_name = fname
+                logger.info(f"成功注册字体: {fpath}")
+                return
+            except Exception as e:
+                logger.warning(f"无法注册字体 {fpath}: {e}")
+
+        # 3) 尝试使用内置 CID 字体（不依赖外部文件）
         try:
-            # 注册字体，使用配置中提供的字体路径
-            font_name = "ChineseFont"
-            pdfmetrics.registerFont(TTFont(font_name, self.config.font_path))
-            self.font_name = font_name
-            logger.info(f"成功注册字体: {self.config.font_path}")
+            from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+            cid_font_name = "STSong-Light"
+            pdfmetrics.registerFont(UnicodeCIDFont(cid_font_name))
+            self.font_name = cid_font_name
+            logger.info(f"使用内置 CID 字体: {cid_font_name}")
+            return
         except Exception as e:
-            logger.error(f"字体初始化失败: {e}")
-            # 如果配置的字体失败，尝试使用系统默认字体
-            self.font_name = "Helvetica"  # 默认字体
-            logger.warning(f"将使用默认字体: {self.font_name}")
+            logger.error(f"内置 CID 字体注册失败: {e}")
+
+        # 4) 最后回退到 Helvetica（可能不支持中文，文本可能不可见）
+        self.font_name = "Helvetica"
+        logger.error("未能成功注册任何中文字体，已回退至 Helvetica，可能导致文本不可见或不可搜索。")
 
     def create_vertical_text(
         self,
@@ -123,28 +148,27 @@ class PdfComposer:
         Returns:
             Path: 生成的PDF文件路径
         """
-        # 清除之前的输出文件（如果存在）
-        if self.config.output_path.exists():
-            self.config.output_path.unlink()
+
+        # 采用临时文件写入，避免被占用时直接unlink报错
+        import tempfile, shutil
+        output_path = self.config.output_path
+        temp_output_path = output_path.with_suffix('.tmp' + output_path.suffix)
+        if temp_output_path.exists():
+            temp_output_path.unlink()
 
         # 如果输出文件夹不存在，则创建
         output_dir = self.config.output_path.parent
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 渲染每个页面，使用单独的Canvas以确保文本可搜索
-        for i, page in enumerate(pages):
-            # 设置文件名：对于多页PDF，我们先生成每页单独的PDF，稍后会合并
-            if len(pages) > 1:
-                temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_{i}{self.config.output_path.suffix}")
-            else:
-                temp_path = self.config.output_path
+        # 使用单一 Canvas 生成多页 PDF，避免后续合并导致的内容丢失
+        # 先创建临时输出 Canvas
+        first_page_size = pages[0].page_size
+        c = canvas.Canvas(str(temp_output_path), pagesize=first_page_size)
 
-            # 创建一个页面的Canvas
-            page_size = page.page_size
-            c = canvas.Canvas(
-                str(temp_path),
-                pagesize=page_size
-            )
+        for i, page in enumerate(pages):
+            # 如果当前页面尺寸与上一个不同，更新 pagesize
+            if i != 0:
+                c.setPageSize(page.page_size)
 
             # 设置文档属性以增强可搜索性
             c.setTitle(f"古籍竖排繁简对照 - 第{page.page_index+1}页")
@@ -165,9 +189,18 @@ class PdfComposer:
             ):
                 x1, y1, x2, y2 = bbox
 
-                # 计算竖排文本的起始位置
+                # ReportLab 坐标系以页面左下角为原点，而图像/像素坐标通常以左上角为原点。
+                # 需要将像素 y 坐标翻转为 PDF 坐标。
+                page_height = page.page_size[1]
+
+                # 转换后的 bbox 顶部 y 坐标
+                pdf_y_top = page_height - y1
+
+                # 计算竖排文本的起始位置：
+                #   - X 轴：列右边缘往左偏移一个字符宽度，保持与图像中列对齐
+                #   - Y 轴：从列顶部开始向下绘制
                 start_x = x2 - self.config.font_size * 1.5
-                start_y = y2 - self.config.font_size * 1.2
+                start_y = pdf_y_top - self.config.font_size * 1.2
 
                 # 绘制简体文本（竖排）
                 self.create_vertical_text(
@@ -178,46 +211,28 @@ class PdfComposer:
                     font_size=self.config.font_size
                 )
 
-            # 结束当前页面并保存
+            # 结束当前页面
             c.showPage()
-            c.save()
 
             logger.info(f"页面 {page.page_index} 渲染完成")
 
-        # 如果是多页PDF，需要合并所有页面
-        if len(pages) > 1:
-            try:
-                from PyPDF2 import PdfMerger
+        # 保存 PDF
+        c.save()
 
-                merger = PdfMerger()
+        # 不再需要跨页合并逻辑
+        logger.info(f"已生成 {len(pages)} 页 PDF 文件")
 
-                # 添加所有临时PDF文件
-                for i in range(len(pages)):
-                    temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_{i}{self.config.output_path.suffix}")
-                    merger.append(str(temp_path))
+        # 原子替换到目标路径
+        try:
+            if output_path.exists():
+                output_path.unlink()
+            shutil.move(str(temp_output_path), str(output_path))
+        except Exception as e:
+            logger.error(f"PDF写入目标路径失败: {e}")
+            raise
 
-                # 写入最终PDF文件
-                merger.write(str(self.config.output_path))
-                merger.close()
-
-                # 删除临时文件
-                for i in range(len(pages)):
-                    temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_{i}{self.config.output_path.suffix}")
-                    if temp_path.exists():
-                        temp_path.unlink()
-
-                logger.info(f"合并了 {len(pages)} 页PDF文件")
-            except ImportError:
-                logger.warning("未找到PyPDF2库，无法合并PDF文件。请安装：pip install PyPDF2")
-                # 至少保留第一页作为输出
-                if pages:
-                    temp_path = self.config.output_path.with_name(f"{self.config.output_path.stem}_page_0{self.config.output_path.suffix}")
-                    if temp_path.exists() and temp_path != self.config.output_path:
-                        import shutil
-                        shutil.copy(temp_path, self.config.output_path)
-
-        logger.info(f"已生成竖排PDF文件: {self.config.output_path}")
-        return self.config.output_path
+        logger.info(f"已生成竖排PDF文件: {output_path}")
+        return output_path
 
 
 def create_pdf_composer(config: RenderConfig) -> PdfComposer:

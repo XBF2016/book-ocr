@@ -141,11 +141,11 @@ def preprocess_image(page_image: PageImage,
     # 灰度化
     gray_image = to_grayscale(page_image.image)
 
-    # 二值化
-    binary_image = otsu_binarize(gray_image)
+    # 先倾斜校正（在灰度图上完成以避免插值造成的伪影）
+    rotated_gray, angle = deskew(gray_image, deskew_angle)
 
-    # 倾斜校正
-    corrected_image, angle = deskew(binary_image, deskew_angle)
+    # 再进行二值化，确保边缘清晰
+    corrected_image = otsu_binarize(rotated_gray)
 
     # 创建新的PageImage对象
     processed_page = PageImage(

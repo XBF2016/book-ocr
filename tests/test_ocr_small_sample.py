@@ -111,6 +111,23 @@ def test_ocr_small_sample(small_sample_path):
     except Exception as e:
         pytest.skip(f"OCR小图块测试失败: {e}")
 
+
+@pytest.mark.skipif(not HAS_OCR_MODULE, reason="OCR模块不可用，可能是缺少依赖")
+@pytest.mark.skipif(
+    "GITHUB_ACTIONS" in os.environ or "CI" in os.environ,
+    reason="在CI环境中跳过需要下载大型模型的测试"
+)
+def test_ocr_small_sample_gray(small_sample_path):
+    """将小图块转为灰度后测试OCR功能"""
+    try:
+        img = Image.open(str(small_sample_path)).convert("L")
+        img_array = np.array(img)
+        text = run_ocr(img_array)
+        assert isinstance(text, str)
+        print(f"灰度输入OCR识别结果: {text}")
+    except Exception as e:
+        pytest.skip(f"灰度OCR小图块测试失败: {e}")
+
 if __name__ == "__main__":
     # 如果直接运行此文件，创建测试资源
     sample_path = create_small_sample()

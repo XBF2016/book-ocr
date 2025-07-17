@@ -6,7 +6,6 @@ import os
 from boocr.dataclasses import InputSource, PageImage, ColumnCrop, OcrResult, RenderedPage, RenderConfig
 from boocr.pdf_utils import extract_pages_from_pdf
 from boocr.image_proc import preprocess_image
-from boocr.col_detect import detect_columns
 from boocr.ocr import create_ocr_engine
 from boocr.converter import create_converter
 from boocr.composer import create_pdf_composer
@@ -26,8 +25,7 @@ def run_pipeline(
     This function will orchestrate the following steps:
     1. PDF parsing and image conversion (P0)
     2. Image preprocessing (P1)
-    3. Column detection and cropping (P2)
-    4. OCR on cropped columns (P3)
+    3. OCR on full pages with PaddleOCR det+cls+rec (P3)
     5. Text conversion (Simplified Chinese) (P4)
     6. Rendering the final output PDF (P5)
 
@@ -58,7 +56,9 @@ def run_pipeline(
 
         # P0: PDF解析和图像转换
         logger.info("步骤 1: PDF解析和图像转换")
-        page_images = extract_pages_from_pdf(input_path)
+        dpi_val = params.get('dpi', 400)
+        logger.info(f"使用 DPI: {dpi_val}")
+        page_images = extract_pages_from_pdf(input_path, dpi=dpi_val)
         logger.info(f"成功提取 {len(page_images)} 页")
 
         # 处理结果存储
@@ -66,7 +66,14 @@ def run_pipeline(
         all_rendered_pages = []  # 所有要渲染的页面
 
         # 创建OCR引擎
-        ocr_engine = create_ocr_engine(use_gpu=params.get('use_gpu', False))
+        ocr_engine = create_ocr_engine(
+            use_gpu=params.get('use_gpu', False),
+            auto_download=params.get('auto_download', True),
+            det_model_dir=params.get('det_model_dir'),
+            rec_model_dir=params.get('rec_model_dir'),
+            cls_model_dir=params.get('cls_model_dir'),
+            rec_only=params.get('rec_only', False),
+        )
 
         # 创建繁简转换器
         converter = create_converter(config=params.get('convert_config', 't2s'))
@@ -79,29 +86,45 @@ def run_pipeline(
             logger.info("步骤 2: 图像预处理")
             processed_page = preprocess_image(page_image, deskew_angle=params.get('deskew_angle', None))
 
-            # P2: 列检测与裁切
-            logger.info("步骤 3: 列检测与裁切")
-            column_bboxes = detect_columns(processed_page.image, num_columns=columns)
-            logger.info(f"检测到 {len(column_bboxes)} 列")
+            # 可选：保存 P1 预处理结果，便于调试
+            if params.get("save_intermediate", True):
+                pdf_stem = Path(input_path).stem
+                output_root = Path(params.get("output_root", "output"))
+                p1_dir = output_root / pdf_stem / "P1"
+                p1_dir.mkdir(parents=True, exist_ok=True)
+                p1_img_path = p1_dir / f"page_{page_image.page_index + 1}.png"
+                try:
+                    from PIL import Image
+                    Image.fromarray(processed_page.image).save(p1_img_path)
+                    logger.debug("已保存 P1 结果至 %s", p1_img_path)
+                except Exception as save_err:
+                    logger.warning("保存 P1 结果失败: %s", save_err)
 
-            # 创建ColumnCrop对象列表
-            column_crops = []
-            for col_idx, bbox in enumerate(column_bboxes):
-                x1, y1, x2, y2 = bbox
-                # 裁切列图像
-                col_image = processed_page.image[y1:y2, x1:x2]
+            # P2 已废弃：直接整页 OCR
+            logger.info("步骤 3: OCR 识别 (整页 det+cls+rec)")
+            h, w = processed_page.image.shape[:2]
+            column_crops = [ColumnCrop(
+                page_index=page_image.page_index,
+                column_index=0,
+                bbox=(0, 0, w, h),
+                image=processed_page.image,
+            )]
 
-                column_crop = ColumnCrop(
-                    page_index=page_image.page_index,
-                    column_index=col_idx,
-                    bbox=bbox,
-                    image=col_image
-                )
-                column_crops.append(column_crop)
-
-            # P3: OCR识别
-            logger.info("步骤 4: OCR识别")
+            # 执行 OCR
+            logger.info("调用 OCR 引擎 ...")
             ocr_results = ocr_engine.process_columns(column_crops)
+
+            # 调试：记录每列 OCR 结果摘要
+            for res in ocr_results:
+                logger.info(
+                    "OCR 结果 - page=%d col=%d len=%d conf=%.2f preview=%r",
+                    res.page_index,
+                    res.column_index,
+                    len(res.text),
+                    res.confidence,
+                    res.text[:30] if res.text else ""
+                )
+
             all_ocr_results.extend(ocr_results)
 
             # P4: 繁简转换
@@ -118,12 +141,12 @@ def run_pipeline(
                 page_size=(page_image.width, page_image.height),
                 trad_texts=trad_texts,
                 simp_texts=simp_texts,
-                column_bboxes=column_bboxes
+                column_bboxes=[(0, 0, processed_page.image.shape[1], processed_page.image.shape[0])]
             )
             all_rendered_pages.append(rendered_page)
 
         # P5: 排版渲染
-        logger.info("步骤 6: 排版渲染")
+        logger.info("步骤 4: 繁简转换完毕，步骤 5: 排版渲染")
         render_config = RenderConfig(
             output_path=Path(output_path),
             font_path=default_font_path,

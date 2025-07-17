@@ -11,12 +11,11 @@
 ## 2. 总体架构
 ---
 ```
-CLI（入口层）
+CLI（入口层，含 `poc`、`extract`、`preproc`、`col` 四个子命令）
 │
 ├─ Pipeline（业务编排层）
 │  ├─ PdfSplitter        (P0)
 │  ├─ Image Preprocessor (P1)
-│  ├─ Column Detector    (P2)
 │  ├─ Vertical OCR       (P3)
 │  ├─ Trad→Simp Convert (P4)
 │  └─ Vertical Text Render (P5)
@@ -35,10 +34,10 @@ CLI（入口层）
 ### 3.1 语言与依赖
 - **Python 3.11**（脚本快、生态丰富）
 - **库**
-  - `pdfplumber` / `PyPDF2` → PDF 拆页与光栅化 (P0)
+  - `pdfplumber` / `PyPDF2` → PDF 拆页与光栅化 (P0，默认 400 DPI，可通过 CLI 覆盖)
   - `OpenCV`           → 图像处理 P1、P2
   - `numpy`            → 数值计算
-  - `pytesseract` / `PaddleOCR` → 竖排繁体 OCR (P3)
+  - `PaddleOCR`（det + cls + rec 全流水线）→ 竖排繁体 OCR (P3)
   - `opencc-py`          → 繁→简转换 (P4)
   - `Pillow`             → 图像合成 (P5)
   - `reportlab` / `fpdf2`  → 可搜索 PDF 生成 (P5)
@@ -53,13 +52,18 @@ CLI（入口层）
 - `RenderConfig`: `{font_path: str, font_size: int, page_size: (w,h), gap_px: 20, …}`
 
 ### 3.3 核心算法
-- **P0** 使用 `pdfplumber` 提取单页并光栅化为图像。
+- **P0** 使用 `pdfplumber` 提取单页并光栅化为图像（默认 400 DPI，可通过 `--dpi` 覆盖），PNG 结果保存至 `output/<PDF名>/P0/`，同时提供 `boocr extract` 子命令方便单独调试。
 - **P1** 灰度化 + Otsu 二值化；倾斜校正可选手动角度参数。
-- **P2** 垂直投影求列分割线；支持 2–6 列，误差控制≤±2 字宽。
-- **P3** OCR：竖排模式，优先加载 PaddleOCR 的中日繁模型。
+- **P2** 使用 PaddleOCR PP-OCRv5 det 模型检测文字列框，自动合并列并裁切；支持 2–6 列，误差控制≤±2 字宽。
+- **P3** OCR：调用 `PaddleOCR.predict()`（det + cls + rec），自动完成方向分类、文字检测与繁体识别；首选 `chinese_cht_PP-OCRv3_server` / `PP-OCRv5_server` 模型，可通过参数切换；Windows CPU 环境默认 `enable_mkldnn=False`，Linux/GPU 可开启 MKLDNN 以提速。
 - **P4** OpenCC「t2s.json」配置，字符级转换，保持长度一致。
 - **P5** 使用 `reportlab`/`fpdf2`，根据 OCR 结果的坐标信息，在对应位置直接绘制竖排的简体文字，确保文本可搜索且排版（列数、字数）与原书一致。
-- **P6** CLI：`boocr poc --input <in.pdf> --output <page_simplified.pdf>`，运行完毕终端打印 "DONE"，异常捕获统一返回码 0。
+- **P6** CLI：
+  - `boocr poc --input <in.pdf> --output <page_simplified.pdf>`：完整 P0–P5 流程
+  - `boocr extract [--input <in.pdf>] [--dpi 400]`：仅执行 P0（省略 --input 时自动选择 input/ 目录下唯一且未处理过的 PDF）
+  - `boocr preproc [--input <in.pdf|output/<PDF名>/P0/>] [--dpi 400] [--deskew_angle <deg>]`：仅执行 P1；未指定时自动寻找唯一 P0 目录
+  - `boocr col [--input <in.pdf|output/<PDF名>/P1/>] [--columns <n>] [--dpi 400] [--save_crops]`：仅执行 P2，输出列分割 JSON + 预览 PNG；开启 `--save_crops` 时保存每列裁剪 PNG
+  以上命令运行完毕终端均打印 "DONE"，异常捕获统一返回码 0。
 
 ---
 ## 4. 目录结构（建议）

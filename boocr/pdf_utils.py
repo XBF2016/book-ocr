@@ -13,7 +13,8 @@ import io
 from boocr.dataclasses import InputSource, PageImage
 
 
-def extract_pages_from_pdf(pdf_path: str | Path) -> list[PageImage]:
+# 默认使用 400 DPI 进行光栅化，以获得更高的清晰度
+def extract_pages_from_pdf(pdf_path: str | Path, dpi: int = 400) -> list[PageImage]:
     """
     从PDF文件中提取所有页面，并转换为PageImage对象列表。
 
@@ -31,27 +32,30 @@ def extract_pages_from_pdf(pdf_path: str | Path) -> list[PageImage]:
 
     page_images = []
 
+    if dpi <= 0:
+        raise ValueError("dpi must be positive")
+
     # 使用pdfplumber打开PDF文件
     with pdfplumber.open(pdf_path) as pdf:
         # 处理每一页
         for i, page in enumerate(pdf.pages):
-            # 获取页面尺寸
-            width = int(page.width * 3)  # 放大3倍以提高分辨率
-            height = int(page.height * 3)
-
-            # 将页面渲染为图像
-            img = page.to_image(resolution=300)  # 300 DPI分辨率
-            img_data = img.original
+            # 将页面渲染为图像，使用给定 DPI
+            # 说明：dpi 越高，图像越清晰，文件占用内存也越大。默认 400 DPI 可保持与原 PDF 接近的清晰度。
+            img = page.to_image(resolution=dpi)
+            pil_image = img.original  # PIL.Image
 
             # 转换为numpy数组
-            page_array = pdf_to_ndarray(img_data)
+            page_array = pdf_to_ndarray(pil_image)
+
+            # 获取渲染后尺寸（像素）
+            width, height = pil_image.size
 
             # 创建并添加PageImage对象
             page_image = PageImage(
                 page_index=i,
                 image=page_array,
                 width=width,
-                height=height
+                height=height,
             )
             page_images.append(page_image)
 
